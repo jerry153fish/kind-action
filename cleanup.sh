@@ -29,7 +29,7 @@ main() {
         args+=(--name "${DEFAULT_CLUSTER_NAME}")
     fi
 
-    kind delete cluster "${args[@]}"
+    kind delete cluster "${args[@]}" || true
 }
 
 main
