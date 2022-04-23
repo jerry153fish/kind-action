@@ -18,22 +18,23 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-DEFAULT_KIND_VERSION=v0.11.1
+DEFAULT_KIND_VERSION=v0.12.0
 DEFAULT_CLUSTER_NAME=chart-testing
-DEFAULT_KUBECTL_VERSION=v1.20.8
+DEFAULT_KUBECTL_VERSION=v1.21.10
 
 show_help() {
 cat << EOF
 Usage: $(basename "$0") <options>
 
     -h, --help                              Display help
-    -v, --version                           The kind version to use (default: $DEFAULT_KIND_VERSION)"
-    -c, --config                            The path to the kind config file"
-    -i, --node-image                        The Docker image for the cluster nodes"
-    -n, --cluster-name                      The name of the cluster to create (default: chart-testing)"
-    -w, --wait                              The duration to wait for the control plane to become ready (default: 60s)"
+    -v, --version                           The kind version to use (default: $DEFAULT_KIND_VERSION)
+    -c, --config                            The path to the kind config file
+    -i, --node-image                        The Docker image for the cluster nodes
+    -n, --cluster-name                      The name of the cluster to create (default: chart-testing)
+    -w, --wait                              The duration to wait for the control plane to become ready (default: 60s)
     -l, --log-level                         The log level for kind [panic, fatal, error, warning, info, debug, trace] (default: warning)
-    -k, --kubectl-version                   The kubectl version to use (default: $DEFAULT_KUBECTL_VERSION)"
+    -k, --kubectl-version                   The kubectl version to use (default: $DEFAULT_KUBECTL_VERSION)
+    -o, --install-only                      Skips cluster creation, only install kind (default: false)
 
 EOF
 }
@@ -46,6 +47,7 @@ main() {
     local wait=60s
     local log_level=
     local kubectl_version="$DEFAULT_KUBECTL_VERSION"
+    local install_only=false
 
     parse_command_line "$@"
 
@@ -55,7 +57,7 @@ main() {
     fi
 
     local arch
-    arch=$(uname -m)
+    arch=$(dpkg --print-architecture)
     local cache_dir="$RUNNER_TOOL_CACHE/kind/$version/$arch"
 
     local kind_dir="$cache_dir/kind/bin/"
@@ -77,7 +79,9 @@ main() {
     "$kind_dir/kind" version
     "$kubectl_dir/kubectl" version --client=true
 
-    create_kind_cluster
+    if [[ "$install_only" == false ]]; then
+      create_kind_cluster
+    fi
 }
 
 parse_command_line() {
@@ -157,6 +161,14 @@ parse_command_line() {
                     exit 1
                 fi
                 ;;
+            -o|--install-only)
+                if [[ -n "${2:-}" ]]; then
+                    install_only="$2"
+                    shift
+                else
+                    install_only=true
+                fi
+                ;;
             *)
                 break
                 ;;
@@ -171,7 +183,7 @@ install_kind() {
 
     mkdir -p "$kind_dir"
 
-    curl -sSLo "$kind_dir/kind" "https://github.com/kubernetes-sigs/kind/releases/download/$version/kind-linux-amd64"
+    curl -sSLo "$kind_dir/kind" "https://github.com/kubernetes-sigs/kind/releases/download/$version/kind-linux-$arch"
     chmod +x "$kind_dir/kind"
 }
 
@@ -180,7 +192,7 @@ install_kubectl() {
 
     mkdir -p "$kubectl_dir"
 
-    curl -sSLo "$kubectl_dir/kubectl" "https://storage.googleapis.com/kubernetes-release/release/$kubectl_version/bin/linux/amd64/kubectl"
+    curl -sSLo "$kubectl_dir/kubectl" "https://storage.googleapis.com/kubernetes-release/release/$kubectl_version/bin/linux/$arch/kubectl"
     chmod +x "$kubectl_dir/kubectl"
 }
 
