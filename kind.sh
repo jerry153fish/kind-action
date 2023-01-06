@@ -18,9 +18,9 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-DEFAULT_KIND_VERSION=v0.16.0
+DEFAULT_KIND_VERSION=v0.17.0
 DEFAULT_CLUSTER_NAME=chart-testing
-DEFAULT_KUBECTL_VERSION=v1.23.12
+DEFAULT_KUBECTL_VERSION=v1.25.5
 
 show_help() {
 cat << EOF
@@ -58,10 +58,10 @@ main() {
 
     local arch
     case $(uname -m) in
-        i386)   arch="386" ;;
-        i686)   arch="386" ;;
-        x86_64) arch="amd64" ;;
-        arm)    dpkg --print-architecture | grep -q "arm64" && arch="arm64" || arch="arm" ;;
+        i386)           arch="386" ;;
+        i686)           arch="386" ;;
+        x86_64)         arch="amd64" ;;
+        arm|aarch64)    dpkg --print-architecture | grep -q "arm64" && arch="arm64" || arch="arm" ;;
     esac
     local cache_dir="$RUNNER_TOOL_CACHE/kind/$version/$arch"
 
